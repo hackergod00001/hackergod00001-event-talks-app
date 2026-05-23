@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Technical Talks Day</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #0056b3;
+            margin-bottom: 30px;
+        }
+        .search-container {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .search-container input[type="text"] {
+            padding: 10px;
+            width: 70%;
+            max-width: 400px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        .search-container button {
+            padding: 10px 15px;
+            margin-left: 10px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .search-container button:hover {
+            background-color: #0056b3;
+        }
+        .schedule {
+            margin-top: 20px;
+        }
+        .talk-slot, .break-slot {
+            background-color: #e9ecef;
+            border-left: 5px solid #007bff;
+            margin-bottom: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        .talk-slot.hidden {
+            display: none;
+        }
+        .talk-slot:hover {
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+            transform: translateY(-2px);
+        }
+        .break-slot {
+            border-left: 5px solid #6c757d;
+            background-color: #f8f9fa;
+            text-align: center;
+            font-weight: bold;
+            color: #495057;
+        }
+        .talk-time {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #0056b3;
+            margin-bottom: 5px;
+        }
+        .talk-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .talk-speakers {
+            font-style: italic;
+            color: #555;
+            margin-bottom: 5px;
+        }
+        .talk-categories {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .talk-description {
+            margin-top: 10px;
+            border-top: 1px solid #ced4da;
+            padding-top: 10px;
+            display: none; /* Hidden by default */
+        }
+        .talk-slot.expanded .talk-description {
+            display: block;
+        }
+        .toggle-description {
+            background: none;
+            border: none;
+            color: #007bff;
+            cursor: pointer;
+            font-size: 0.9em;
+            text-decoration: underline;
+            padding: 0;
+            margin-top: 5px;
+        }
+        .toggle-description:hover {
+            color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Technical Talks Day Schedule</h1>
+
+        <div class="search-container">
+            <input type="text" id="categorySearch" placeholder="Search by category...">
+            <button id="clearSearch">Clear Filter</button>
+        </div>
+
+        <div class="schedule" id="schedule">
+            <!-- Schedule will be dynamically generated here -->
+        </div>
+    </div>
+
+    <script>
+        const talksData = [
+            {
+                "title": "Introduction to AI in Web Development",
+                "speakers": ["Alice Johnson"],
+                "category": ["AI", "Web Development"],
+                "duration": 60,
+                "description": "An overview of how artificial intelligence is changing the landscape of web development, from chatbots to personalized user experiences."
+            },
+            {
+                "title": "Modern CSS Techniques for Responsive Design",
+                "speakers": ["Bob Smith", "Charlie Brown"],
+                "category": ["Frontend", "CSS", "Design"],
+                "duration": 60,
+                "description": "Explore the latest CSS features and techniques to build truly responsive and adaptive web interfaces across all devices."
+            },
+            {
+                "title": "Building Scalable Node.js Microservices",
+                "speakers": ["Diana Prince"],
+                "category": ["Backend", "Node.js", "Microservices"],
+                "duration": 60,
+                "description": "A deep dive into designing and implementing scalable microservices with Node.js, focusing on performance and maintainability."
+            },
+            {
+                "title": "Understanding WebAssembly: A New Era for Web Performance",
+                "speakers": ["Eve Adams"],
+                "category": ["WebAssembly", "Performance", "Frontend"],
+                "duration": 60,
+                "description": "Discover the power of WebAssembly and how it enables high-performance applications directly in the browser, opening new possibilities for web development."
+            },
+            {
+                "title": "Security Best Practices for Web Applications",
+                "speakers": ["Frank White"],
+                "category": ["Security", "Web Development"],
+                "duration": 60,
+                "description": "Learn essential security measures and best practices to protect your web applications from common vulnerabilities and attacks."
+            },
+            {
+                "title": "State Management in React with Hooks",
+                "speakers": ["Grace Hopper"],
+                "category": ["Frontend", "React", "JavaScript"],
+                "duration": 60,
+                "description": "Master advanced state management patterns in React using modern hooks, improving code readability and maintainability in your applications."
+            }
+        ];
+
+        const scheduleDiv = document.getElementById('schedule');
+        const categorySearchInput = document.getElementById('categorySearch');
+        const clearSearchButton = document.getElementById('clearSearch');
+
+        let currentTime = new Date();
+        currentTime.setHours(10, 0, 0, 0); // Event starts at 10:00 AM
+
+        function formatTime(date) {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+
+        function renderSchedule(filterCategory = '') {
+            scheduleDiv.innerHTML = ''; // Clear existing schedule
+
+            let talkIndex = 0;
+            let currentMoment = new Date(currentTime); // Use a copy for iteration
+
+            for (let i = 0; i < talksData.length + 1; i++) { // +1 for lunch break
+                if (i === 3) { // Insert lunch break after the 3rd talk
+                    const lunchStart = new Date(currentMoment);
+                    currentMoment.setMinutes(currentMoment.getMinutes() + 60); // 1 hour lunch
+                    const lunchEnd = new Date(currentMoment);
+
+                    const breakSlot = document.createElement('div');
+                    breakSlot.className = 'break-slot';
+                    breakSlot.innerHTML = `
+                        <div class="talk-time">${formatTime(lunchStart)} - ${formatTime(lunchEnd)}</div>
+                        <div class="talk-title">Lunch Break</div>
+                    `;
+                    scheduleDiv.appendChild(breakSlot);
+                    continue; // Skip to next iteration
+                }
+
+                const talk = talksData[talkIndex];
+                if (!talk) continue; // Should not happen with correct loop count
+
+                const talkStart = new Date(currentMoment);
+                currentMoment.setMinutes(currentMoment.getMinutes() + talk.duration);
+                const talkEnd = new Date(currentMoment);
+
+                const talkSlot = document.createElement('div');
+                talkSlot.className = 'talk-slot';
+                talkSlot.dataset.categories = talk.category.map(c => c.toLowerCase()).join(','); // Store categories for filtering
+
+                // Check for filter match
+                const matchesFilter = filterCategory === '' ||
+                                      talk.category.some(cat => cat.toLowerCase().includes(filterCategory.toLowerCase()));
+
+                if (!matchesFilter) {
+                    talkSlot.classList.add('hidden');
+                }
+
+                talkSlot.innerHTML = `
+                    <div class="talk-time">${formatTime(talkStart)} - ${formatTime(talkEnd)}</div>
+                    <div class="talk-title">${talk.title}</div>
+                    <div class="talk-speakers">Speaker(s): ${talk.speakers.join(', ')}</div>
+                    <div class="talk-categories">Categories: ${talk.category.join(', ')}</div>
+                    <button class="toggle-description">Show Description</button>
+                    <div class="talk-description">${talk.description}</div>
+                `;
+
+                // Add event listener for description toggle
+                const toggleButton = talkSlot.querySelector('.toggle-description');
+                toggleButton.addEventListener('click', () => {
+                    talkSlot.classList.toggle('expanded');
+                    toggleButton.textContent = talkSlot.classList.contains('expanded') ? 'Hide Description' : 'Show Description';
+                });
+
+                scheduleDiv.appendChild(talkSlot);
+
+                // Add transition time if it's not the last talk before lunch or the very last talk
+                if (talkIndex < talksData.length -1 && i !== 2) { // 2 is the index for the 3rd talk, before lunch
+                    const transitionStart = new Date(currentMoment);
+                    currentMoment.setMinutes(currentMoment.getMinutes() + 10); // 10 minute transition
+                    const transitionEnd = new Date(currentMoment);
+
+                    const breakSlot = document.createElement('div');
+                    breakSlot.className = 'break-slot';
+                    breakSlot.style.borderLeftColor = '#ffc107'; /* Yellow for transition */
+                    breakSlot.style.backgroundColor = '#fff3cd';
+                    breakSlot.style.color = '#856404';
+                    breakSlot.innerHTML = `
+                        <div class="talk-time">${formatTime(transitionStart)} - ${formatTime(transitionEnd)}</div>
+                        <div class="talk-title">Transition / Break</div>
+                    `;
+                    scheduleDiv.appendChild(breakSlot);
+                }
+                talkIndex++;
+            }
+        }
+
+        // Initial render
+        renderSchedule();
+
+        // Event listener for search input
+        categorySearchInput.addEventListener('keyup', (event) => {
+            renderSchedule(event.target.value.trim());
+        });
+
+        // Event listener for clear search button
+        clearSearchButton.addEventListener('click', () => {
+            categorySearchInput.value = '';
+            renderSchedule();
+        });
+
+    </script>
+</body>
+</html>
